@@ -1,21 +1,14 @@
 const graphql = require("graphql");
+const Player = require("../models/player");
 
 const {
-  GraphQLObjectType, GraphQLString, GraphQLID, GraphQLInt, GraphQLSchema
+  GraphQLObjectType, GraphQLString, GraphQLID, GraphQLInt, GraphQLSchema,
+  GraphQLList, GraphQLNonNull
 } = graphql;
 
 // Schema defines data on the Graph like object types (player type), relation
 // between these object types and describes how it can reach into the graph to
 // interact with the data to retrieve or mutate the data.
-
-var fakePlayersDatabase = [
-  { name: "Alex", level: 5, id: 1 },
-  { name: "Guisado", level: 4, id: 2 },
-  { name: "Ferran", level: 3, id: 3 },
-  { name: "Carles", level: 4, id: 4 },
-  { name: "Sala", level: 3, id: 5 },
-  { name: "Vicent", level: 2, id: 6 },
-];
 
 const PlayerType = new GraphQLObjectType({
   name: "Player",
@@ -38,14 +31,43 @@ const RootQuery = new GraphQLObjectType({
       resolve(parent, args) {
         // Here we define how to get data from database source.
         // This will return the player with id passed in argument by the user.
-        return fakePlayersDatabase.find(item => item.id === Number(args.id));
+        return Player.findById(args.id);
+      },
+    },
+    players:{
+      type: new GraphQLList(PlayerType),
+      resolve(parent, args) {
+        return Player.find({});
       },
     },
   },
 });
  
+//Very similar to RootQuery helps user to add/update to the database.
+const Mutation = new GraphQLObjectType({
+  name: "Mutation",
+  fields: {
+    addPlayer: {
+      type: PlayerType,
+      args: {
+        //GraphQLNonNull make these field required
+        name: { type: new GraphQLNonNull(GraphQLString) },
+        level: { type: new GraphQLNonNull(GraphQLInt) },
+      },
+      resolve(parent, args) {
+        const player = new Player({
+          name: args.name,
+          level: args.level,
+        });
+        return player.save();
+      },
+    },
+  },
+});
+
 // Creating a new GraphQL Schema, with options query which defines query we will
 // allow users to use when they are making request.
 module.exports = new GraphQLSchema({
   query: RootQuery,
+  mutation: Mutation,
 });

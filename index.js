@@ -2,6 +2,13 @@ const express = require("express");
 const { graphqlHTTP } = require("express-graphql");
 const schema = require("./schema/schema");
 const PORT = process.env.PORT || 5000;
+const mongoose = require("mongoose");
+const uri = process.env.MONGODB_URI;
+
+mongoose.connect(uri);
+mongoose.connection.once("open", () => {
+  console.log("Conneted to database");
+});
 
 const app = express();
 
