@@ -62,6 +62,33 @@ const Mutation = new GraphQLObjectType({
         return player.save();
       },
     },
+    updatePlayer: {
+      type: PlayerType,
+      args: {
+        //GraphQLNonNull make these field required
+        id: { type: new GraphQLNonNull(GraphQLID) },
+        name: { type: GraphQLString },
+        level: { type: GraphQLInt },
+      },
+      resolve(parent, args) {
+        const fieldsToUpdate = {};
+        if (args.name) {
+          fieldsToUpdate.name = args.name;
+        }
+        if (args.level) {
+          fieldsToUpdate.level = args.level;
+        }
+        const updatedPlayer = Player.findByIdAndUpdate(
+          args.id,
+          fieldsToUpdate,
+          { new: true }
+        );
+        if (!updatedPlayer) {
+          throw new Error("Error");
+        }
+        return updatedPlayer;
+      },
+    },
   },
 });
 
