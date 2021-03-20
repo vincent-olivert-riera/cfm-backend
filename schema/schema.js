@@ -3,12 +3,38 @@ const Player = require("../models/player");
 
 const {
   GraphQLObjectType, GraphQLString, GraphQLID, GraphQLInt, GraphQLSchema,
-  GraphQLList, GraphQLNonNull
+  GraphQLList, GraphQLNonNull, GraphQLInputObjectType
 } = graphql;
 
 // Schema defines data on the Graph like object types (player type), relation
 // between these object types and describes how it can reach into the graph to
 // interact with the data to retrieve or mutate the data.
+
+const AvailabilityType = new GraphQLObjectType({
+  name: "Availability",
+  fields: () => ({
+    monday: { type: new GraphQLList(GraphQLString) },
+    tuesday: { type: new GraphQLList(GraphQLString) },
+    wednesday: { type: new GraphQLList(GraphQLString) },
+    thursday: { type: new GraphQLList(GraphQLString) },
+    friday: { type: new GraphQLList(GraphQLString) },
+    saturday: { type: new GraphQLList(GraphQLString) },
+    sunday: { type: new GraphQLList(GraphQLString) },
+  })
+});
+
+const AvailabilityInputType = new GraphQLInputObjectType({
+  name: "AvailabilityInput",
+  fields: () => ({
+    monday: { type: new GraphQLList(GraphQLString) },
+    tuesday: { type: new GraphQLList(GraphQLString) },
+    wednesday: { type: new GraphQLList(GraphQLString) },
+    thursday: { type: new GraphQLList(GraphQLString) },
+    friday: { type: new GraphQLList(GraphQLString) },
+    saturday: { type: new GraphQLList(GraphQLString) },
+    sunday: { type: new GraphQLList(GraphQLString) },
+  })
+});
 
 const PlayerType = new GraphQLObjectType({
   name: "Player",
@@ -16,6 +42,7 @@ const PlayerType = new GraphQLObjectType({
     id: { type: GraphQLID },
     name: { type: GraphQLString },
     level: { type: GraphQLInt },
+    availability: { type: AvailabilityType },
   })
 });
 
@@ -53,12 +80,17 @@ const Mutation = new GraphQLObjectType({
         //GraphQLNonNull make these field required
         name: { type: new GraphQLNonNull(GraphQLString) },
         level: { type: new GraphQLNonNull(GraphQLInt) },
+        availability: { type: AvailabilityInputType },
       },
       resolve(parent, args) {
-        const player = new Player({
+        const fieldsToAdd = {
           name: args.name,
           level: args.level,
-        });
+        };
+        if (args.availability) {
+          fieldsToAdd.availability = args.availability;
+        }
+        const player = new Player(fieldsToAdd);
         return player.save();
       },
     },
@@ -69,6 +101,7 @@ const Mutation = new GraphQLObjectType({
         id: { type: new GraphQLNonNull(GraphQLID) },
         name: { type: GraphQLString },
         level: { type: GraphQLInt },
+        availability: { type: AvailabilityInputType },
       },
       resolve(parent, args) {
         const fieldsToUpdate = {};
@@ -77,6 +110,9 @@ const Mutation = new GraphQLObjectType({
         }
         if (args.level) {
           fieldsToUpdate.level = args.level;
+        }
+        if (args.availability) {
+          fieldsToUpdate.availability = args.availability;
         }
         const updatedPlayer = Player.findByIdAndUpdate(
           args.id,
