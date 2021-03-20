@@ -3,12 +3,27 @@ const Player = require("../models/player");
 
 const {
   GraphQLObjectType, GraphQLString, GraphQLID, GraphQLInt, GraphQLSchema,
-  GraphQLList, GraphQLNonNull, GraphQLInputObjectType
+  GraphQLList, GraphQLNonNull, GraphQLInputObjectType, GraphQLEnumType
 } = graphql;
 
 // Schema defines data on the Graph like object types (player type), relation
 // between these object types and describes how it can reach into the graph to
 // interact with the data to retrieve or mutate the data.
+
+const PositionEnumType = new GraphQLEnumType({
+  name: "PositionEnum",
+  values: {
+    DEFENDER: {
+      value: "defender",
+    },
+    ATTACKER: {
+      value: "attacker",
+    },
+    VERSATILE: {
+      value: "versatile",
+    },
+  },
+});
 
 const AvailabilityType = new GraphQLObjectType({
   name: "Availability",
@@ -41,6 +56,7 @@ const PlayerType = new GraphQLObjectType({
   fields: () => ({
     id: { type: GraphQLID },
     name: { type: GraphQLString },
+    position: { type: PositionEnumType },
     level: { type: GraphQLInt },
     availability: { type: AvailabilityType },
   })
@@ -79,12 +95,14 @@ const Mutation = new GraphQLObjectType({
       args: {
         //GraphQLNonNull make these field required
         name: { type: new GraphQLNonNull(GraphQLString) },
+        position: { type: new GraphQLNonNull(PositionEnumType) },
         level: { type: new GraphQLNonNull(GraphQLInt) },
         availability: { type: AvailabilityInputType },
       },
       resolve(parent, args) {
         const fieldsToAdd = {
           name: args.name,
+          position: args.position,
           level: args.level,
         };
         if (args.availability) {
@@ -100,6 +118,7 @@ const Mutation = new GraphQLObjectType({
         //GraphQLNonNull make these field required
         id: { type: new GraphQLNonNull(GraphQLID) },
         name: { type: GraphQLString },
+        position: { type: PositionEnumType },
         level: { type: GraphQLInt },
         availability: { type: AvailabilityInputType },
       },
@@ -107,6 +126,9 @@ const Mutation = new GraphQLObjectType({
         const fieldsToUpdate = {};
         if (args.name) {
           fieldsToUpdate.name = args.name;
+        }
+        if (args.position) {
+          fieldsToUpdate.position = args.position;
         }
         if (args.level) {
           fieldsToUpdate.level = args.level;
