@@ -89,6 +89,20 @@ const Mutation = new GraphQLObjectType({
         return updatedPlayer;
       },
     },
+    deletePlayer: {
+      type: PlayerType,
+      args: {
+        //GraphQLNonNull make these field required
+        id: { type: new GraphQLNonNull(GraphQLID) },
+      },
+      resolve(parent, args) {
+        const deletedPlayer = Player.findByIdAndRemove(args.id);
+        if (!deletedPlayer) {
+          throw new Error("Error");
+        }
+        return deletedPlayer;
+      },
+    },
   },
 });
 
