@@ -1,14 +1,16 @@
 const graphql = require("graphql");
+const graphqlIsoDate = require("graphql-iso-date");
 const Player = require("../models/player");
+const TrainingWeek = require("../models/training-week");
 
 const {
   GraphQLObjectType, GraphQLString, GraphQLID, GraphQLInt, GraphQLSchema,
   GraphQLList, GraphQLNonNull, GraphQLInputObjectType, GraphQLEnumType
 } = graphql;
 
-// Schema defines data on the Graph like object types (player type), relation
-// between these object types and describes how it can reach into the graph to
-// interact with the data to retrieve or mutate the data.
+const { GraphQLDate } = graphqlIsoDate;
+
+// Schemas for players
 
 const PositionEnumType = new GraphQLEnumType({
   name: "PositionEnum",
@@ -62,6 +64,89 @@ const PlayerType = new GraphQLObjectType({
   })
 });
 
+// Schemas for training weeks
+
+const TrainingWeekPlayersType = new GraphQLObjectType({
+  name: "TrainingWeekPlayers",
+  fields: () => ({
+    defender_1: {
+      type: PlayerType,
+      resolve(parent, args) {
+        return Player.findById(parent.defender_1);
+      },
+    },
+    defender_2: {
+      type: PlayerType,
+      resolve(parent, args) {
+        return Player.findById(parent.defender_2);
+      },
+    },
+    attacker_1: {
+      type: PlayerType,
+      resolve(parent, args) {
+        return Player.findById(parent.attacker_1);
+      },
+    },
+    attacker_2: {
+      type: PlayerType,
+      resolve(parent, args) {
+        return Player.findById(parent.attacker_2);
+      },
+    },
+  }),
+});
+
+const TrainingWeekPlayersInputType = new GraphQLInputObjectType({
+  name: "TrainingWeekPlayersInput",
+  fields: () => ({
+    defender_1: { type: GraphQLID },
+    defender_2: { type: GraphQLID },
+    attacker_1: { type: GraphQLID },
+    attacker_2: { type: GraphQLID },
+  }),
+});
+
+const TrainingWeekHoursType = new GraphQLObjectType({
+  name: "TrainingWeekHours",
+  fields: () => ({
+    _1800: { type: TrainingWeekPlayersType },
+    _1830: { type: TrainingWeekPlayersType },
+    _1900: { type: TrainingWeekPlayersType },
+    _1930: { type: TrainingWeekPlayersType },
+    _2000: { type: TrainingWeekPlayersType },
+    _2030: { type: TrainingWeekPlayersType },
+    _2100: { type: TrainingWeekPlayersType },
+  }),
+});
+
+const TrainingWeekHoursInputType = new GraphQLInputObjectType({
+  name: "TrainingWeekHoursInput",
+  fields: () => ({
+    _1800: { type: TrainingWeekPlayersInputType },
+    _1830: { type: TrainingWeekPlayersInputType },
+    _1900: { type: TrainingWeekPlayersInputType },
+    _1930: { type: TrainingWeekPlayersInputType },
+    _2000: { type: TrainingWeekPlayersInputType },
+    _2030: { type: TrainingWeekPlayersInputType },
+    _2100: { type: TrainingWeekPlayersInputType },
+  }),
+});
+
+const TrainingWeekType = new GraphQLObjectType({
+  name: "TrainingWeek",
+  fields: () => ({
+    id: { type: GraphQLID },
+    date: { type: GraphQLDate },
+    monday: { type: TrainingWeekHoursType },
+    tuesday: { type: TrainingWeekHoursType },
+    wednesday: { type: TrainingWeekHoursType },
+    thursday: { type: TrainingWeekHoursType },
+    friday: { type: TrainingWeekHoursType },
+    saturday: { type: TrainingWeekHoursType },
+    sunday: { type: TrainingWeekHoursType },
+  }),
+});
+
 // RootQuery describes how users can use the graph and grab data.
 // E.g Root query to get all players, get a particular player, etc.
 const RootQuery = new GraphQLObjectType({
@@ -81,6 +166,19 @@ const RootQuery = new GraphQLObjectType({
       type: new GraphQLList(PlayerType),
       resolve(parent, args) {
         return Player.find({});
+      },
+    },
+    trainingWeek: {
+      type: TrainingWeekType,
+      args: { id: { type: GraphQLID } },
+      resolve(parent, args) {
+        return TrainingWeek.findById(args.id);
+      },
+    },
+    trainingWeeks:{
+      type: new GraphQLList(TrainingWeekType),
+      resolve(parent, args) {
+        return TrainingWeek.find({});
       },
     },
   },
@@ -159,6 +257,82 @@ const Mutation = new GraphQLObjectType({
           throw new Error("Error");
         }
         return deletedPlayer;
+      },
+    },
+    addTrainingWeek: {
+      type: TrainingWeekType,
+      args: {
+        date: { type: new GraphQLNonNull(GraphQLDate) },
+        monday: { type: TrainingWeekHoursInputType },
+        tuesday: { type: TrainingWeekHoursInputType },
+        wednesday: { type: TrainingWeekHoursInputType },
+        thursday: { type: TrainingWeekHoursInputType },
+        friday: { type: TrainingWeekHoursInputType },
+        saturday: { type: TrainingWeekHoursInputType },
+        sunday: { type: TrainingWeekHoursInputType },
+      },
+      resolve(parent, args) {
+        const trainingWeek = new TrainingWeek(args);
+        return trainingWeek.save();
+      },
+    },
+    updateTrainingWeek: {
+      type: TrainingWeekType,
+      args: {
+        id: { type: new GraphQLNonNull(GraphQLID) },
+        monday: { type: TrainingWeekHoursInputType },
+        tuesday: { type: TrainingWeekHoursInputType },
+        wednesday: { type: TrainingWeekHoursInputType },
+        thursday: { type: TrainingWeekHoursInputType },
+        friday: { type: TrainingWeekHoursInputType },
+        saturday: { type: TrainingWeekHoursInputType },
+        sunday: { type: TrainingWeekHoursInputType },
+      },
+      resolve(parent, args) {
+        const fieldsToUpdate = {};
+        if (args.monday) {
+          fieldsToUpdate.monday = args.monday;
+        }
+        if (args.tuesday) {
+          fieldsToUpdate.tuesday = args.tuesday;
+        }
+        if (args.wednesday) {
+          fieldsToUpdate.wednesday = args.wednesday;
+        }
+        if (args.thursday) {
+          fieldsToUpdate.thursday = args.thursday;
+        }
+        if (args.friday) {
+          fieldsToUpdate.friday = args.friday;
+        }
+        if (args.saturday) {
+          fieldsToUpdate.saturday = args.saturday;
+        }
+        if (args.sunday) {
+          fieldsToUpdate.sunday = args.sunday;
+        }
+        const updatedTrainingWeek = TrainingWeek.findByIdAndUpdate(
+          args.id,
+          fieldsToUpdate,
+          { new: true }
+        );
+        if (!updatedTrainingWeek) {
+          throw new Error("Error");
+        }
+        return updatedTrainingWeek;
+      },
+    },
+    deleteTrainingWeek: {
+      type: TrainingWeekType,
+      args: {
+        id: { type: new GraphQLNonNull(GraphQLID) },
+      },
+      resolve(parent, args) {
+        const deletedTrainingWeek = TrainingWeek.findByIdAndRemove(args.id);
+        if (!deletedTrainingWeek) {
+          throw new Error("Error");
+        }
+        return deletedTrainingWeek;
       },
     },
   },
