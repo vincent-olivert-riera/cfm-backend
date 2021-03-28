@@ -175,6 +175,13 @@ const RootQuery = new GraphQLObjectType({
         return TrainingWeek.findById(args.id);
       },
     },
+    trainingWeekByDate: {
+      type: TrainingWeekType,
+      args: { date: { type: new GraphQLNonNull(GraphQLDate) } },
+      resolve(parent, args) {
+        return TrainingWeek.findOne({ date: args.date });
+      },
+    },
     trainingWeeks:{
       type: new GraphQLList(TrainingWeekType),
       resolve(parent, args) {
